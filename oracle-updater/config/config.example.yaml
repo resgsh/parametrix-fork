@@ -1,0 +1,37 @@
+# ODV Client configuration file
+
+network:
+ network: "testnet"
+ ogmios_kupo:
+   ogmios_url: "ws://127.0.0.1:1337"
+   kupo_url: "http://127.0.0.1:1442"
+
+wallet:
+ mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+ network: "testnet" # mainnet
+
+policy_id: "b00f27e5c2284f87b29c2b877dd341e3f0c3d06e1e0b02bb9c458f13"
+oracle_address: "addr_test1wpgjxstaqc8am88c89zd72j5rw065ex8l5j7ln4pzngxt8qr4tzdj"
+
+tokens:
+ reward_token_policy: ""
+ reward_token_name: ""
+
+# This is odv request validity window length, should be <= time_uncertainty_aggregation
+odv_validity_length: 120000 # milliseconds
+
+reference_script:
+  # Will lookup the script utxo at this address.
+  address: "addr..."
+  # Looking through all utxos at an address could be inefficient. Provide utxo reference to speed up the reference script query.
+  utxo_reference:
+    transaction_id: "4606793120f127744d2b2f3bcc265a9a91eea8693f6eee2f48287738edededed"
+    output_index: 1
+
+nodes:
+ - root_url: "https://oracle-node-1.testnet.charli3.io"
+   pub_key: "bd72e960d6237031290e8b4189ea7c6c305ef907d4881729db60e3f3b7c4af5b"
+ - root_url: "https://oracle-node-2.testnet.charli3.io"
+   pub_key: "7437e43e7e88c5642569f112f0e22b17c2fae155007254506dd0090dd9312568"
+ - root_url: "https://oracle-node-3.testnet.charli3.io"
+   pub_key: "76502e17aba981ecbf09fd5b41bc1b6a3f5a0a85bb47c07300b906a347969702"

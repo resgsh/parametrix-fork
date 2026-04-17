@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "odv-multisig-charli3-client-sdk"
+version = "0.1.0"
+description = "Charli3 Oracle Data Verification (ODV) Client SDK"
+authors = ["talhahussain7 <talhahussainb@gmail.com>"]
+readme = "README.md"
+packages = [{include = "charli3_odv_client"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+opshin = "^0.24.4"
+pycardano = { git = "https://github.com/Charli3-Official/pycardano.git", branch = "fix/odv-multisig-v0.17.0-kupo-additions"}
+aiohttp = "^3.9.0"
+pydantic = "^2.5.0"
+PyYAML = "^6.0"
+click = "^8.1.0"
+rich = "^13.7.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+black = "^23.0.0"
+isort = "^5.12.0"
+mypy = "^1.7.0"
+pre-commit = "^4.0.1"
+ruff = "^0.7.0"
+
+[tool.poetry.scripts]
+charli3 = "charli3_odv_client.cli:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

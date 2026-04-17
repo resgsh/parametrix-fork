@@ -1,0 +1,119 @@
+# Oracle Updater Service
+
+## Overview
+
+Backend service wrapping the Charli3 ODV client to:
+
+* Fetch oracle data from nodes
+* Build oracle update transactions (CBOR)
+
+Acts as the **writer layer**:
+
+```
+Oracle Updater → builds tx → updates oracle UTxO
+dApp → reads oracle UTxO
+```
+
+---
+
+## Run
+
+```bash
+poetry run uvicorn app.main:app --reload --port 8000
+```
+
+---
+
+## Endpoints
+
+### 1. `/oracle/feeds`
+
+Fetch signed oracle data from nodes.
+
+```bash
+curl -X POST http://localhost:8000/oracle/feeds
+```
+
+**Example Output**
+
+```json
+{
+  "count": 2,
+  "node_messages": {
+    "582037c6febc9c2f940a38a5c1ea35eb9353ae233497bf9564395c76bf7b0590c4eb": {
+      "message": "d8799f1a0003e2231b0000019d99c12040581c886dcb2363e160c944e63cf544ce6f6265b22ef7c4e2478dd975078eff",
+      "signature": "3e283e0353d9072122d10a3f75bdebac527aadc9fbd4a6486869814318017d3f0ef5e0a2c526504a079d43172adf0d4ba4000be0af52a65be65cdf9e7434d20f",
+      "verification_key": "582037c6febc9c2f940a38a5c1ea35eb9353ae233497bf9564395c76bf7b0590c4eb"
+    },
+    "58205a23e6016659b8c644efcb49301184f6d712037579df6793a50eae332f510248": {
+      "message": "d8799f1a0003e2231b0000019d99c12040581c886dcb2363e160c944e63cf544ce6f6265b22ef7c4e2478dd975078eff",
+      "signature": "1423980ce986df95a4bc4cafe4b7f44a902131d2845a3f8641e46c94869a2670b39c28347e4c92e9dfbccfd76cdf5734c1dee11bf5538139a9709e22e7ddfa00",
+      "verification_key": "58205a23e6016659b8c644efcb49301184f6d712037579df6793a50eae332f510248"
+    }
+  }
+}
+```
+
+---
+
+### 2. `/oracle/aggregate`
+
+Build oracle update transaction.
+
+```bash
+curl -X POST http://localhost:8000/oracle/aggregate
+```
+
+**Example Output**
+
+```json
+{
+  "tx_id": "5bc8058635330d55d838fce711f461f6134484f70c93de1a53bb747623c8c5f2",
+  "median": 254499,
+  "signatures": 2,
+  "cbor": "84ab00d901028382582092b1efb6ae056ebf9371cf28b2764f2066b1ba7948b1be2d66ea6294869a95860182582092b1efb6ae056ebf9371cf28b2764f2066b1ba7948b1be2d66ea6294869a958602825820e1ec53ebae43599066f9fdfe26d431bad0588871369556a3741f633bfbb68842010183a300581d70221ee21e9607f766e1e1223248f67320014825169a1d98eb34c6f65801821a00b71b00a1581c886dcb2363e160c944e63cf544ce6f6265b22ef7c4e2478dd975078ea1444333524101028201d8185858d87b9fd8799fa2581c346f808be06b58f0066d6f8a4d74f48396f97f335bb75f5579e8e5871a0007a120581cb0213fd209df01c2420d06bb952d6b7dec8d6e5011a8e786edd9f7ae1a001e84801b0000019d99c12040ffffa300581d70221ee21e9607f766e1e1223248f67320014825169a1d98eb34c6f65801821a001e8480a1581c886dcb2363e160c944e63cf544ce6f6265b22ef7c4e2478dd975078ea1444333415301028201d8185823d8799fd87b9fa3001a0003e223011b0000019d99c12040021b0000019d99ca4800ffff8258390051374dcf4a79090cfab6c03c276bf8f994fbedca2c1ed90a085bede77b8e3dfad1c97edb1e01c7dfdd7ac506e13b6659ed5def247a9d79421b0000000253a55943021a000b48cb031a073202be081a073201920b5820a40cca36c1f0f626a6118bb0b975c8a7dcaac7ced13fe597d5aa2b897ea0806a0dd901028182582092b1efb6ae056ebf9371cf28b2764f2066b1ba7948b1be2d66ea6294869a9586020ed9010282581cb0213fd209df01c2420d06bb952d6b7dec8d6e5011a8e786edd9f7ae581c346f808be06b58f0066d6f8a4d74f48396f97f335bb75f5579e8e587108258390051374dcf4a79090cfab6c03c276bf8f994fbedca2c1ed90a085bede77b8e3dfad1c97edb1e01c7dfdd7ac506e13b6659ed5def247a9d79421b000000025384a2a8111a0042e2c612d9010282825820cc161195ede0a554d7322ad786e1d789402f944a5be1bf1f73fb4619b75261c0008258207a69e9d3d90826f861107e4b503c56e08c40d092416a50bad37fc89865a78cd100a2008282582037c6febc9c2f940a38a5c1ea35eb9353ae233497bf9564395c76bf7b0590c4eb5840cda44af007e0e831a3e59c323baf16c4217e7fec1d8042dc2f50878b3b626a6639b451434f0991122fd0287ad9f1d84d66a9846f1406db232e6ea3761df543098258205a23e6016659b8c644efcb49301184f6d712037579df6793a50eae332f51024858407c1175425cc8599b19a5609b3f06fe9c0ab3810311e50a093277d102fc9d115d095d0a814a7bb3b7cb15b4e90dac713d92dd7ddd11c865757cec430c5da20c0205a282000082d87a80821a00075af61a0a382fc282000282d8799fa2581cb0213fd209df01c2420d06bb952d6b7dec8d6e5011a8e786edd9f7ae1a0003e223581c346f808be06b58f0066d6f8a4d74f48396f97f335bb75f5579e8e5871a0003e223ff821a0015fdc01a1c8b2801f5f6"
+}
+```
+
+---
+
+## Flow
+
+```
+1. /oracle/aggregate
+2. receive CBOR
+3. submit transaction
+4. read updated oracle UTxO
+```
+
+---
+
+## Notes
+
+* `/oracle/aggregate` does **not** submit the transaction
+* Always fetches fresh feeds
+* `/oracle/feeds` is mainly for debugging and inspection
+* `feeds.json` (if enabled) is optional
+
+---
+
+## Setup
+
+```bash
+poetry env use /usr/bin/python3.11
+poetry install
+```
+
+Configure:
+
+```
+config/config.yaml
+```
+
+---
+
+## Summary
+
+* `/feeds` → raw signed oracle data
+* `/aggregate` → build transaction (CBOR)
+* submission handled separately
