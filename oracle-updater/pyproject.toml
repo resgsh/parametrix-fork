@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "oracle-updater"
+version = "0.1.0"
+description = "Charli3 ODV oracle updater service"
+authors = ["you"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+
+fastapi = "^0.111.0"
+uvicorn = {extras = ["standard"], version = "^0.30.0"}
+httpx = "^0.27.0"
+python-dotenv = "^1.0.1"
+
+# Charli3 client as local path dependency
+odv-multisig-charli3-client-sdk = { path = "./charli3-pull-oracle-client", develop = true }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
