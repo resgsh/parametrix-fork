@@ -15,27 +15,26 @@ pub type Action {
 validator registry(v_fee_addr: Address, v_payment_asset: AssetClass) {
   mint(redeemer: ByteArray, policy_id: PolicyId, tx: Transaction) {
     let Transaction { outputs, extra_signatories, mint, .. } = tx
+
     expect [pool_out] = outputs_with(tx.outputs, policy_id, redeemer)
-    expect Some(_pool_script_hash) = address_script_hash(pool_out.address)
     expect InlineDatum(pool_datum) = pool_out.datum
     expect PoolDatum {
       hedger,
       fee_addr,
-      payment_asset,
       pool_id,
+      payment_asset,
       coverage_target,
       premium_bps,
+      pool_addr,
       ..
     } = pool_datum
     expect redeemer == pool_id
     expect Some(hedger_pub_key) = address_pub_key(hedger)
-
     let premium_paid =
       (
         get_all_value_to(outputs, pool_out.address)
           |> quantity_of(payment_asset.asset_id, payment_asset.asset_name)
-      ) == coverage_target * premium_bps / 100
-
+      ) == coverage_target * premium_bps / 10_000
     key_signed(extra_signatories, hedger_pub_key) && premium_paid && v_fee_addr == fee_addr && v_payment_asset == payment_asset && only_minted_token(
       mint,
       policy_id,

@@ -43,6 +43,7 @@ test subscribe_valid() {
       event_time: 0,
       settlement_time: 2_000,
       fee_addr: mock_pub_key_address(2, None),
+      pool_addr: script_address,
       fee_percentage: 5,
       event_type,
       event_threshold: 50,
@@ -101,6 +102,7 @@ test subscribe_fail_wrong_units() {
       event_time: 0,
       settlement_time: 2_000,
       fee_addr: mock_pub_key_address(2, None),
+      pool_addr: script_address,
       fee_percentage: 5,
       event_type,
       event_threshold: 50,
@@ -170,6 +172,7 @@ test settle_success_event_occured_correct_split() {
       event_time: 0,
       settlement_time: 2_000,
       fee_addr: mock_pub_key_address(2, None),
+      pool_addr: script_address,
       fee_percentage: 5,
     }
 
@@ -310,6 +313,7 @@ test settle_success_no_event_correct_split() {
       event_time: 0,
       settlement_time: 2_000,
       fee_addr: mock_pub_key_address(2, None),
+      pool_addr: script_address,
       fee_percentage: 5,
     }
 
@@ -446,6 +450,7 @@ test settle_fail_oracle_expired() {
       event_time: 0,
       settlement_time: 2_000,
       fee_addr: mock_pub_key_address(2, None),
+      pool_addr: script_address,
       fee_percentage: 5,
     }
 
