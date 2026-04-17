@@ -1,0 +1,38 @@
+{
+  "name": "c3-offchain",
+  "description": "A Mesh starter template for NextJS",
+  "author": "MeshJS",
+  "license": "Apache-2.0",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "mint": "npx tsx test/mintTest-js/vouchermint.ts",
+    "c3": "npx tsx src/parametrix/test/c3Test.ts"
+  },
+  "dependencies": {
+    "@meshsdk/core": "1.9.0-beta.86",
+    "@meshsdk/core-csl": "1.9.0-beta.86",
+    "@meshsdk/hydra": "^1.9.0-beta.87",
+    "@meshsdk/react": "1.9.0-beta.86",
+    "cbor": "^10.0.3",
+    "dotenv": "^16.4.7",
+    "next": "15.3.4",
+    "pretty-print-error": "^1.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
