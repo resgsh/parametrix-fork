@@ -38,7 +38,7 @@ pub type ContributionDatum {
   amount_type: ByteArray,
 }
 
-//SUBSCRIBER | PREMIUM
+//SUBSCRIPTION | PREMIUM
 
 pub type ContributionData {
   data_list: List<ContributionDatum>,

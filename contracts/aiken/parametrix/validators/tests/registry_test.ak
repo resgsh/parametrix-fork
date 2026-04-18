@@ -25,7 +25,7 @@ test success_registry_mint_valid() {
   let coverage_target = 1_000_000_000
   let premium_bps = 500
 
-  let premium = coverage_target * premium_bps / 100
+  let premium = coverage_target * premium_bps / 10_000
 
   let premium_value =
     from_asset(payment_asset.asset_id, payment_asset.asset_name, premium)

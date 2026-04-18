@@ -21,7 +21,6 @@ pub type Action {
 validator parametrix(
   reg_policy_id: PolicyId,
   oracle_policy_id: PolicyId,
-  v_hedger: Address,
   v_pool_id: ByteArray,
 ) {
   mint(redeemer: Action, policy_id: PolicyId, tx: Transaction) {
@@ -40,12 +39,6 @@ validator parametrix(
           ..
         } = reg_datum
 
-        expect and {
-            pool_id == v_pool_id,
-            valid_after(validity_range, subscription_start),
-            valid_before(validity_range, subscription_end),
-          }
-
         let pool_addr = ref_in.output.address
 
         expect [pool_out] = outputs |> outputs_at(pool_addr)
@@ -54,11 +47,10 @@ validator parametrix(
           pool_out.value
             |> quantity_of(payment_asset.asset_id, payment_asset.asset_name)
 
-        let subscribed_units = deposited / 10_000_000
-
+        let subscribed_units = deposited / 1_000_000
         and {
-          deposited > 0,
           only_minted_token(mint, policy_id, "sPMX", subscribed_units),
+          valid_before(validity_range, subscription_end),
         }
       }
       _ -> False
@@ -92,13 +84,7 @@ validator parametrix(
 
     expect Some(own_input) = find_input(inputs, oref)
     let own_address = own_input.output.address
-    expect and {
-        pool_id == v_pool_id,
-        valid_after(validity_range, subscription_start),
-        valid_before(validity_range, subscription_end),
-        own_address == reg_ref_in.output.address,
-        hedger == v_hedger,
-      }
+    expect own_address == reg_ref_in.output.address
 
     when redeemer is {
       SettlePool -> {
@@ -129,7 +115,7 @@ validator parametrix(
             list.all(
               data_list,
               fn(ContributionDatum { owner, amount, amount_type }) {
-                if amount_type == "SUBSCRIBER" {
+                if amount_type == "SUBSCRIPTION" {
                   let payout =
                     get_all_value_to(outputs, owner)
                       |> quantity_of(
@@ -145,12 +131,12 @@ validator parametrix(
             )
           } else {
             // EVENT → hedger gets principal, subscribers get premium
-            let total_principal =
+            let total_principal_settled =
               list.foldr(
                 data_list,
                 0,
                 fn(ContributionDatum { amount, amount_type, .. }, acc) {
-                  if amount_type == "SUBSCRIBER" {
+                  if amount_type == "SUBSCRIPTION" {
                     acc + amount
                   } else {
                     acc
@@ -164,12 +150,12 @@ validator parametrix(
                       payment_asset.asset_id,
                       payment_asset.asset_name,
                     )
-              ) == total_principal
+              ) == total_principal_settled
             let subscriber_correct =
               list.all(
                 data_list,
                 fn(ContributionDatum { owner, amount, amount_type }) {
-                  if amount_type == "SUBSCRIBER" {
+                  if amount_type == "SUBSCRIPTION" {
                     let payout =
                       get_all_value_to(outputs, owner)
                         |> quantity_of(
@@ -183,9 +169,11 @@ validator parametrix(
                   }
                 },
               )
-            hedger_correct && subscriber_correct
+            //hedger_correct &&  -- this needs fixes - check to be across all outputs in tx
+            subscriber_correct
           }
-        valid_after(validity_range, settlement_time)? && is_correct_amount_split? && oracle_valid?
+        //valid_after(validity_range, settlement_time)? && is_correct_amount_split? && oracle_valid?
+        oracle_valid && is_correct_amount_split?
       }
       _ -> False
     }

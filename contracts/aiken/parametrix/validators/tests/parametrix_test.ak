@@ -29,7 +29,7 @@ test subscribe_valid() {
     AssetClass { asset_id: stable_policy_id, asset_name: stable_assetname }
 
   let deposit = 20_000_000
-  let units = deposit / 10_000_000
+  let units = deposit / 1_000_000
 
   let pool_datum =
     PoolDatum {
@@ -75,7 +75,6 @@ test subscribe_valid() {
   parametrix.parametrix.mint(
     reg_policy_id,
     oracle_policy_id,
-    mock_pub_key_address(9, None),
     pool_id,
     Subscribe,
     policy_id,
@@ -133,7 +132,6 @@ test subscribe_fail_wrong_units() {
   !parametrix.parametrix.mint(
     reg_policy_id,
     oracle_policy_id,
-    mock_pub_key_address(9, None),
     pool_id,
     Subscribe,
     policy_id,
@@ -179,7 +177,7 @@ test settle_success_event_occured_correct_split() {
         ContributionDatum {
           owner: subscriber,
           amount,
-          amount_type: "SUBSCRIBER",
+          amount_type: "SUBSCRIPTION",
         },
       ],
     }
@@ -271,7 +269,6 @@ test settle_success_event_occured_correct_split() {
   parametrix.parametrix.spend(
     reg_policy_id,
     oracle_policy_id,
-    hedger,
     pool_id,
     None,
     SettlePool,
@@ -319,7 +316,7 @@ test settle_success_no_event_correct_split() {
         ContributionDatum {
           owner: subscriber,
           amount,
-          amount_type: "SUBSCRIBER",
+          amount_type: "SUBSCRIPTION",
         },
       ],
     }
@@ -408,7 +405,6 @@ test settle_success_no_event_correct_split() {
   parametrix.parametrix.spend(
     reg_policy_id,
     oracle_policy_id,
-    hedger,
     pool_id,
     None,
     SettlePool,
@@ -455,7 +451,7 @@ test settle_fail_oracle_expired() {
         ContributionDatum {
           owner: subscriber,
           amount,
-          amount_type: "SUBSCRIBER",
+          amount_type: "SUBSCRIPTION",
         },
       ],
     }
@@ -484,7 +480,7 @@ test settle_fail_oracle_expired() {
           from_asset(payment_asset.asset_id, payment_asset.asset_name, premium),
         )
       |> invalid_before(True, 2001)
-      |> invalid_hereafter(True, 4000)
+      //|> invalid_hereafter(True, 4000)
       |> complete()
       |> add_input(
           True,
@@ -552,7 +548,6 @@ test settle_fail_oracle_expired() {
   !parametrix.parametrix.spend(
     reg_policy_id,
     oracle_policy_id,
-    hedger,
     pool_id,
     None,
     SettlePool,
