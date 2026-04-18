@@ -1,0 +1,1 @@
+export const FALLBACK_BLOCKFROST_KEY="preprodxxx"

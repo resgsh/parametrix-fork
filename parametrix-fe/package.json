@@ -12,6 +12,8 @@
     "@meshsdk/core": "^1.9.0-beta.102",
     "@meshsdk/core-csl": "^1.9.0-beta.102",
     "@meshsdk/react": "^2.0.0-beta.2",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4"
