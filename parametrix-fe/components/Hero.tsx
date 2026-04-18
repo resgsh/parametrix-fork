@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { CardanoWallet, useWallet } from "@meshsdk/react";
-import CreatePoolModal from "@/components/CreatePoolModal";
+
+import dynamic from "next/dynamic";
+
+const CreatePoolModal = dynamic(
+    () => import("./CreatePoolModal"),
+    { ssr: false }
+);
 
 export default function Hero() {
     const { connected } = useWallet();
@@ -89,7 +95,7 @@ export default function Hero() {
              transition-all duration-200
              disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            Create Pool
+                            Create Hedge Pool
                         </button>
 
                         {!connected && (

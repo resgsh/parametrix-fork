@@ -21,7 +21,9 @@ export async function GET() {
 export async function POST(req: Request) {
     const body = await req.json();
     const data = read();
+
     data.push(body);
+
     write(data);
     return NextResponse.json({ ok: true });
 }

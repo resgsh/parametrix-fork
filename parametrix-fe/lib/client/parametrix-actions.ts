@@ -7,14 +7,20 @@ export async function createPoolContract(
     params: {
         eventType: string;
         paymentAssetCode: string;
-        feeAddress: string;
+        coverage: number;
+        premiumBps: number;
+        threshold: number;
+        feeAddress?: string;
     }
 ) {
-    const {unsignedTx, poolId} = await createPool(
+    const { unsignedTx, poolId } = await createPool(
         wallet,
         params.paymentAssetCode,
         params.eventType,
-        params.feeAddress
+            params.coverage,
+            params.premiumBps,
+            params.threshold,
+
     );
 
     const signedTx = await wallet.signTx(unsignedTx, true);

@@ -21,6 +21,7 @@ import {assetClass} from "@meshsdk/common";
 
 import blueprint from "../plutus.json" with {type: "json"};
 import {C3_CONFIG, getC3OracleData} from "../oracle/charli3Oracle";
+import {getWalletInfoForTx} from "@/lib/meshjs/wallet-util";
 
 const NETWORK = 'preprod';
 const NETWORK_ID = 0;
@@ -48,7 +49,13 @@ function getValidator(name: string) {
     return v.compiledCode;
 }
 
-export const assetMap = {
+type Asset = {
+    policyId: string;
+    assetNameHex: string;
+    unit: string;
+};
+
+export const assetMap: Record<string, Asset> = {
     ADA: {
         policyId: "",
         assetNameHex: "",
@@ -57,9 +64,16 @@ export const assetMap = {
 
     DJED: {
         policyId: "c3a654d54ddc60c669665a8fc415ba67402c63b58fe65c821d63ba07",
-        assetNameHex: "446a65644d6963726f555344",
+        assetNameHex: "446a65644d6963726f555344",// ("DjedMicroUSD"),
         unit: "c3a654d54ddc60c669665a8fc415ba67402c63b58fe65c821d63ba07446a65644d6963726f555344",
-    }
+    },
+
+    USDM: {
+        policyId: "a1b2c3d4e5f6...", // TODO replace
+        assetNameHex: stringToHex("USDM"),
+        unit: "xxx",
+
+    },
 };
 
 function buildPubKeyAddress(feeAddrBech32: string) {
@@ -91,15 +105,17 @@ function loadScripts(asset: any, feeAddrBech32: string, poolId: string) {
 
     let registryPolicyId = resolveScriptHash(registryScript, 'V3');
 
+
+    // ---------------- PARAMETRIX (pool validator) ----------------
     const poolCompiled = getValidator("parametrix.");
     const poolIdHex = stringToHex(poolId)
 
     const poolScript = applyParamsToScript(
         poolCompiled,
         [
-            scriptHash(registryPolicyId),
-            scriptHash(C3_CONFIG.policyId),
-            builtinByteString(poolIdHex),
+            scriptHash(registryPolicyId),          // reg_policy_id
+            scriptHash(C3_CONFIG.policyId),    // oracle_policy_id
+            builtinByteString(poolIdHex),                 // v_pool_id
         ],
         "JSON"
     );
@@ -119,26 +135,51 @@ function loadScripts(asset: any, feeAddrBech32: string, poolId: string) {
     };
 }
 
-function buildPoolDatum(poolId: string, asset: any, hedgerAddr: string, eventType: string, feeAddr: string) {
+// --------------------------------------------------
+// DATUM (STRICT ORDER)
+// --------------------------------------------------
+function buildPoolDatum(
+    poolId: string,
+    asset: any,
+    hedgerAddr: string,
+    eventType: string,
+    threshold: number,
+    coverage: number,
+    premiumBps: number,
+    feeAddr: string
+) {
+    // --- Time configuration (hackathon presets) ---
+    const now = Date.now();
 
-    const eventThreshold = eventType === "RAINFALL_EXCEEDED" ? 100 : 999999;
+    const startTime = now;                          // pool opens immediately
+    const endTime = now + 24 * 60 * 60 * 1000;      // subscriptions close in 24h
+    const eventTime = endTime + 5 * 60 * 1000;      // oracle evaluation shortly after
+    const settlementTime = now;                     // simplified (for demo)
 
     return mConStr0([
-        poolId,
-        mAssetClass(asset.policyId, asset.assetNameHex),
-        buildMPubKeyAddress(hedgerAddr),
+        poolId,                                       // unique pool identifier
 
-        eventType,
-        eventThreshold,
-        COVERAGE,
-        500,
+        mAssetClass(asset.policyId, asset.assetNameHex), // asset used (DJED)
 
-        Date.now(),
-        Date.now() + 60 * 60 * 24 * 1000,
-        Date.now() + 100,
-        1776475090000,
-        buildMPubKeyAddress(feeAddr),
-        500,
+        buildMPubKeyAddress(hedgerAddr),              // hedger (protection buyer)
+
+        eventType,                                    // oracle event type (rainfall / flight)
+
+        threshold,                                    // value required to trigger payout
+
+        coverage,                                     // payout amount to hedger if event occurs
+
+        premiumBps,                                   // premium rate (in basis points)
+
+        startTime,                                    // subscription start
+        endTime,                                      // subscription end
+
+        eventTime,                                    // oracle check time
+        settlementTime,                               // settlement execution time
+
+        buildMPubKeyAddress(feeAddr),                 // protocol / fee address
+
+        premiumBps,                                   // ⚠️ duplicate field (confirm purpose: fee or reuse)
     ]);
 }
 
@@ -156,50 +197,97 @@ function buildContributionDatum(ownerAddr: string, amount: number, amount_type: 
 
 // ================= CREATE =================
 
-export async function createPool(wallet: any, paymentAssetCode: string, eventType: string, feeAddress: string = FEE_ADDRESS) {
-
-    const changeAddress = await wallet.getChangeAddress();
+export async function createPool(
+    wallet: any,
+    paymentAssetCode: string,
+    eventType: string,
+    coverage: number,
+    premiumBps: number,
+    threshold: number,
+    feeAddress: string = FEE_ADDRESS
+) {
+    console.log("createPool params:", {
+        paymentAssetCode,
+        eventType,
+        coverage,
+        premiumBps,
+        threshold,
+        feeAddress,
+    });
+    const {utxos, collateral, changeAddress} = await getWalletInfoForTx(wallet);
+    console.log("changeAddress:", changeAddress)
     const hedgerPkh = resolvePaymentKeyHash(changeAddress);
     const poolId = `${hedgerPkh.slice(0, 3)}-${Date.now()}`;
 
-    const utxos = await wallet.getUtxos();
     if (!utxos.length) throw new Error('No wallet UTxOs');
 
+    // @ts-ignore
     const asset = assetMap[paymentAssetCode];
     if (!asset) throw new Error("Unsupported asset");
 
     const {registry, pool} = loadScripts(asset, feeAddress, poolId);
-    const collateral = (await wallet.getCollateral())[0];
 
-    const datum = buildPoolDatum(poolId, asset, changeAddress, eventType, feeAddress);
+    const coverageAmount = coverage * MICRO_UNITS; // human → onchain
+
+    const datum = buildPoolDatum(
+        poolId,
+        asset,
+        changeAddress,
+        eventType,
+        threshold,
+        coverageAmount,
+        premiumBps,
+        feeAddress
+    );
 
     const premium_micro_units = (COVERAGE * PREMIUM_BPS) / 10_000;
-
+    const provider = new KoiosProvider(NETWORK);
     const tx = new MeshTxBuilder({
-        fetcher: wallet,
-        submitter: wallet,
-        evaluator: wallet
+    fetcher: provider,
+    submitter: provider,
+    evaluator: wallet
     }).setNetwork(NETWORK);
 
-    await tx
-        .mintPlutusScriptV3()
-        .mint("1", registry.policyId, stringToHex(poolId))
-        .mintingScript(registry.script)
-        .mintRedeemerValue(stringToHex(poolId))
+    try {
+        await tx
+            .mintPlutusScriptV3()
+            .mint("1", registry.policyId, stringToHex(poolId))
+            .mintingScript(registry.script)
+            .mintRedeemerValue(stringToHex(poolId))
 
-        .txOut(pool.address, [{ unit: registry.policyId + stringToHex(poolId), quantity: "1" }])
-        .txOutInlineDatumValue(datum)
+        // ---------------- POOL UTXO ----------------
+        .txOut(pool.address, [
+            {
+                unit: registry.policyId + stringToHex(poolId),
+                quantity: "1",
+            },
+        ])
+            .txOutInlineDatumValue(datum)
 
-        .txOut(pool.address, [{ unit: asset.unit, quantity: premium_micro_units.toString() }])
-        .txOutInlineDatumValue(buildContributionDatum(changeAddress, premium_micro_units, "PREMIUM"))
+        // ---------------- Premium UTXO ----------------
+        .txOut(pool.address, [
+            {
+                unit: asset.unit,
+                quantity: premium_micro_units.toString(),
+            },
+        ])
+            .txOutInlineDatumValue(buildContributionDatum(changeAddress, premium_micro_units, "PREMIUM"))
 
-        .requiredSignerHash(hedgerPkh)
+            .requiredSignerHash(hedgerPkh)
 
-        .txInCollateral(collateral.input.txHash, collateral.input.outputIndex, collateral.output.amount, collateral.output.address)
+        .txInCollateral(
+            collateral!.input.txHash,
+            collateral!.input.outputIndex,
+            collateral!.output.amount,
+            collateral!.output.address
+        )
 
-        .changeAddress(changeAddress)
-        .selectUtxosFrom(utxos)
-        .complete();
+            .changeAddress(changeAddress)
+            .selectUtxosFrom(utxos)
+            .complete();
+    } catch (e) {
+        console.error(e)
+    }
 
     return {unsignedTx: tx.txHex, poolId: poolId};
 }
