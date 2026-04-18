@@ -19,4 +19,9 @@ async def get_feeds():
 
 @app.post("/oracle/aggregate")
 async def run_aggregate():
-    return await aggregate()
+    try:
+        return await aggregate()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
