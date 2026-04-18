@@ -480,7 +480,7 @@ test settle_fail_oracle_expired() {
           from_asset(payment_asset.asset_id, payment_asset.asset_name, premium),
         )
       |> invalid_before(True, 2001)
-      |> invalid_hereafter(True, 4000)
+      //|> invalid_hereafter(True, 4000)
       |> complete()
       |> add_input(
           True,

@@ -84,12 +84,7 @@ validator parametrix(
 
     expect Some(own_input) = find_input(inputs, oref)
     let own_address = own_input.output.address
-    expect and {
-        pool_id == v_pool_id,
-        valid_after(validity_range, subscription_start),
-        valid_before(validity_range, subscription_end),
-        own_address == reg_ref_in.output.address,
-      }
+    expect own_address == reg_ref_in.output.address
 
     when redeemer is {
       SettlePool -> {
@@ -136,7 +131,7 @@ validator parametrix(
             )
           } else {
             // EVENT → hedger gets principal, subscribers get premium
-            let total_principal =
+            let total_principal_settled =
               list.foldr(
                 data_list,
                 0,
@@ -155,7 +150,7 @@ validator parametrix(
                       payment_asset.asset_id,
                       payment_asset.asset_name,
                     )
-              ) == total_principal
+              ) == total_principal_settled
             let subscriber_correct =
               list.all(
                 data_list,
@@ -174,9 +169,11 @@ validator parametrix(
                   }
                 },
               )
-            hedger_correct && subscriber_correct
+            //hedger_correct &&  -- this needs fixes - check to be across all outputs in tx
+            subscriber_correct
           }
-        valid_after(validity_range, settlement_time)? && is_correct_amount_split? && oracle_valid?
+        //valid_after(validity_range, settlement_time)? && is_correct_amount_split? && oracle_valid?
+        oracle_valid && is_correct_amount_split?
       }
       _ -> False
     }

@@ -26,8 +26,8 @@ export function decodeC3Datum(plutusData: string): C3OracleData | null {
         const raw: any = deserializeDatum(plutusData);
 
         // debug (optional)
-        console.log("[C3] RAW:");
-        console.dir(raw, { depth: null });
+        //console.log("[C3] RAW:");
+        //console.dir(raw, { depth: null });
 
         const pairs = raw?.fields?.[0]?.fields?.[0]?.map;
         if (!pairs) return null;
@@ -113,7 +113,7 @@ export async function getC3OracleUtxo(
         current.data.timestamp > latest.data.timestamp ? current : latest
     );
 
-    console.log("[C3] Selected:", result.utxo.input.txHash.slice(0, 8));
+    //console.log("[C3] Selected:", result.utxo.input.txHash.slice(0, 8));
 
     return result.utxo;
 }

@@ -1,9 +1,11 @@
-import {BlockfrostProvider,} from "@meshsdk/core";
+import { BlockfrostProvider } from "@meshsdk/core";
+import { FALLBACK_BLOCKFROST_KEY } from "./blockchainProvider.ts";
 
+const apiKey =
+    Deno.env.get("NEXT_PUBLIC_BLOCKFROST_API_KEY") ||
+    FALLBACK_BLOCKFROST_KEY;
 
-export const blockfrost_api_key = Deno.env.get("NEXT_PUBLIC_BLOCKFROST_API_KEY") ?? "";
-export const blockchainProvider = new BlockfrostProvider(blockfrost_api_key);
-
+export const blockchainProvider = new BlockfrostProvider(apiKey);
 
 export async function getAddressUtxos({
                                           scriptAddress,
