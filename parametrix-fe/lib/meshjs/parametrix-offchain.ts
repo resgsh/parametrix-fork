@@ -243,9 +243,9 @@ export async function createPool(
     const premium_micro_units = (COVERAGE * PREMIUM_BPS) / 10_000;
     const provider = new KoiosProvider(NETWORK);
     const tx = new MeshTxBuilder({
-    fetcher: provider,
-    submitter: provider,
-    evaluator: wallet
+        fetcher: provider,
+        submitter: provider,
+        evaluator: provider
     }).setNetwork(NETWORK);
 
     try {
