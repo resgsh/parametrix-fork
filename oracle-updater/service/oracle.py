@@ -77,12 +77,10 @@ async def fetch_feeds(save=False):
         "node_messages": node_messages,
     }
 
-
-# --- AGGREGATE ---
 async def aggregate():
     config, client, tx_manager, tx_builder, change_address, signing_key = setup()
 
-    # ✅ MUST match CLI
+    # Step 0: validity window (chain-aligned)
     validity_window = tx_manager.calculate_validity_window(
         config.odv_validity_length
     )
@@ -133,9 +131,19 @@ async def aggregate():
         node_messages,
     )
 
+    # Step 5: sign + submit
+    status, submitted_tx = await tx_manager.sign_and_submit(
+        final_tx,
+        signing_keys=[signing_key],
+        wait_confirmation=True,
+    )
+
+    if status != "confirmed":
+        raise Exception(f"Transaction failed with status: {status}")
+
     return {
         "tx_id": str(final_tx.id),
         "median": odv_result.median_value,
         "signatures": len(signatures),
-        "cbor": final_tx.to_cbor_hex(),
+        "submitted": True,
     }
