@@ -59,13 +59,38 @@ export default function OracleRefresh() {
                 {/* Response */}
                 {res && (
                     <div className="mt-6 p-5 rounded-xl border border-green-200 bg-green-50 text-sm">
-                        <div className="font-medium text-green-800 mb-3">Oracle Updated</div>
+                        <div className="font-medium text-green-800 mb-4">Oracle Updated</div>
 
-                        <div className="grid md:grid-cols-2 gap-3">
-                            <div><span className="text-gray-600">Tx ID:</span> <span className="font-mono">{res.tx_id}</span></div>
-                            <div><span className="text-gray-600">Median:</span> {res.median}</div>
-                            <div><span className="text-gray-600">Signatures:</span> {res.signatures}</div>
-                            <div><span className="text-gray-600">Submitted:</span> {res.submitted ? "Yes" : "No"}</div>
+                        <div className="space-y-4">
+
+                            {/* TX ID full width */}
+                            <div>
+                                <div className="text-gray-600 mb-1">Tx ID</div>
+                                <div className="font-mono text-xs break-all bg-white border border-gray-200 rounded-md p-3">
+                                    {res.tx_id}
+                                </div>
+                            </div>
+
+                            {/* rest grid */}
+                            <div className="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <div className="text-gray-600 text-xs">Median</div>
+                                    <div className="font-medium">{res.median}</div>
+                                </div>
+
+                                <div>
+                                    <div className="text-gray-600 text-xs">Signatures</div>
+                                    <div className="font-medium">{res.signatures}</div>
+                                </div>
+
+                                <div>
+                                    <div className="text-gray-600 text-xs">Submitted</div>
+                                    <div className="font-medium">
+                                        {res.submitted ? "Yes" : "No"}
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 )}

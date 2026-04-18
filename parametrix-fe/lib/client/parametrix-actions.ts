@@ -71,3 +71,30 @@ export async function subscribeContract(
 
     return {txHash};
 }
+
+import { settle } from "@/lib/meshjs/parametrix-offchain";
+
+export async function settleContract(
+    wallet: any,
+    params: {
+        poolId: string;
+        paymentAssetCode: string;
+        feeAddress?: string;
+    }
+) {
+    const  unsignedTx = await settle(
+        wallet,
+        params.poolId,
+        params.paymentAssetCode,
+        params.feeAddress
+    );
+
+    console.log("unsignedTx:", unsignedTx);
+
+    const signedTx = await wallet.signTx(unsignedTx, true);
+    const txHash = await wallet.submitTx(signedTx);
+
+    console.log("txHash:", txHash);
+
+    return { txHash };
+}

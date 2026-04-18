@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useWallet } from "@meshsdk/react";
-import { subscribeContract } from "@/lib/client/parametrix-actions";
+import {settleContract, subscribeContract} from "@/lib/client/parametrix-actions";
 
 export default function PoolDetailsModal({
                                              open,
@@ -46,7 +46,21 @@ export default function PoolDetailsModal({
     };
 
     const handleSettle = async () => {
-        console.log("Settle clicked");
+        try {
+            if (!wallet) {
+                console.error("Wallet not connected");
+                return;
+            }
+
+            const { txHash } = await settleContract(wallet, {
+                poolId: pool.poolId,
+                paymentAssetCode: pool.payment_asset_code || "ADA",
+            });
+
+            console.log("Settled:", txHash);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     return (

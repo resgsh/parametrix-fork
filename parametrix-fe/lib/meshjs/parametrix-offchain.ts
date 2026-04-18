@@ -506,3 +506,229 @@ export async function subscribe(
     console.log("Tx built")
     return { unsignedTx: tx.txHex }; // ✅ changed
 }
+
+
+export interface ContributionDatumObject {
+    owner: string;        // bech32
+    amount: number;
+    amount_type: string;  // "PREMIUM" | "SUBSCRIPTION"
+}
+
+export interface ParsedContributionUtxo {
+    utxo: any;
+    contributions: ContributionDatumObject[];
+}
+function parseContributionDatumFromUtxo(u: any): ParsedContributionUtxo | null {
+    try {
+        if (!u.output.plutusData) return null;
+
+        const d = deserializeDatum(u.output.plutusData);
+
+        // normalize constructor (bigint → number)
+        const ctor = Number(d.constructor);
+
+        if (
+            ctor !== 0 ||
+            !Array.isArray(d.fields)
+        ) {
+            return null;
+        }
+
+        const field0 = d.fields[0];
+
+        // 🔁 emulate CSL `.list`
+        const list = Array.isArray(field0)
+            ? field0
+            : field0?.list;
+
+        if (!Array.isArray(list)) {
+            return null;
+        }
+
+        const contributions = list.map((item: any) => {
+            const innerCtor = Number(item.constructor);
+
+            if (
+                innerCtor !== 0 ||
+                !Array.isArray(item.fields) ||
+                item.fields.length !== 3
+            ) {
+                throw new Error("Invalid ContributionDatum shape");
+            }
+
+            return {
+                owner: serializeAddressObj(item.fields[0]),
+                amount: Number(item.fields[1].int),
+                amount_type: hexToString(item.fields[2].bytes),
+            };
+        });
+
+        return {
+            utxo: u,
+            contributions,
+        };
+    } catch (e) {
+        console.log("parse fail:", e);
+        return null;
+    }
+}
+
+export async function settle(
+    wallet: any, // ✅ changed
+    poolId: string,
+    paymentAssetCode: string,
+    feeAddress: string = FEE_ADDRESS
+) {
+    const { collateral, walletAddress: addr } = await getWalletInfoForTx(wallet); // ✅ changed
+    const pkh = resolvePaymentKeyHash(addr);
+
+    const provider = blockchainProvider; // ✅ changed
+    const utxos = await provider.fetchAddressUTxOs(addr);
+    if (!utxos.length) throw new Error("No wallet UTxOs");
+
+    const asset = assetMap[paymentAssetCode];
+    if (!asset) throw new Error("Unsupported asset");
+
+    const { pool, registry } = loadScripts(asset, feeAddress, poolId);
+
+    // ---------------- REGISTRY REF ----------------
+    const poolUtxos = await provider.fetchAddressUTxOs(pool.address);
+    const nftUnit = registry.policyId + stringToHex(poolId);
+
+    const regRef = poolUtxos.find((u: any) =>
+        u.output.amount.some((a: any) => a.unit === nftUnit)
+    );
+
+    if (!regRef) throw new Error("Registry ref not found");
+
+    const poolDatum = parsePoolDatumFromUtxo(regRef);
+
+    // ---------------- ORACLE REF ----------------
+    const { utxo: oracleUtxo, data: oracleData } = await getC3OracleData();
+
+    const priceMetricMatchingOnChain = oracleData.price * 1_000_000;
+
+    const eventOccurred =
+        poolDatum.event_type === "RAINFALL_EXCEEDED"
+            ? priceMetricMatchingOnChain > poolDatum.event_threshold
+            : false;
+
+    // ---------------- SCRIPT UTXOs ----------------
+    if (!poolUtxos.length) throw new Error("No pool UTxOs");
+
+    const fundingPoolUtxoDatumPairs = poolUtxos
+        .map(parseContributionDatumFromUtxo)
+        .filter((x): x is ParsedContributionUtxo => x !== null);
+
+    let premiumUtxoDatumPair: ParsedContributionUtxo | null = null;
+    const subscriptionUtxosDatumPairs: ParsedContributionUtxo[] = [];
+
+    for (const p of fundingPoolUtxoDatumPairs) {
+        for (const c of p.contributions) {
+            if (c.amount_type === "PREMIUM") {
+                premiumUtxoDatumPair = p;
+                break;
+            }
+
+            if (c.amount_type === "SUBSCRIPTION") {
+                subscriptionUtxosDatumPairs.push(p);
+                break;
+            }
+        }
+    }
+
+    if (!premiumUtxoDatumPair || subscriptionUtxosDatumPairs.length === 0) {
+        console.log("No relevant UTxOs found. Exiting.");
+        return;
+    }
+
+    let tx = new MeshTxBuilder({
+        fetcher: provider,
+        submitter: provider,
+        evaluator: provider,
+    }).setNetwork(NETWORK);
+
+    const payouts = new Map<string, number>();
+    let totalPrincipalSettled = 0;
+
+    for (const p of subscriptionUtxosDatumPairs) {
+        const utxo = p.utxo;
+
+        for (const c of p.contributions) {
+            const premiumShare = Math.floor(
+                (c.amount * poolDatum.premium_bps) / 10_000
+            );
+
+            if (!eventOccurred) {
+                const expected = c.amount + premiumShare;
+                payouts.set(c.owner, (payouts.get(c.owner) || 0) + expected);
+            } else {
+                payouts.set(c.owner, (payouts.get(c.owner) || 0) + premiumShare);
+                totalPrincipalSettled += c.amount;
+            }
+        }
+
+        tx = tx
+            .spendingPlutusScriptV3()
+            .txIn(
+                utxo.input.txHash,
+                utxo.input.outputIndex,
+                utxo.output.amount,
+                pool.address
+            )
+            .txInInlineDatumPresent()
+            .txInRedeemerValue(mConStr1([]))
+            .txInScript(pool.script);
+    }
+
+    if (premiumUtxoDatumPair) {
+        tx = tx
+            .spendingPlutusScriptV3()
+            .txIn(
+                premiumUtxoDatumPair.utxo.input.txHash,
+                premiumUtxoDatumPair.utxo.input.outputIndex,
+                premiumUtxoDatumPair.utxo.output.amount,
+                pool.address
+            )
+            .txInInlineDatumPresent()
+            .txInRedeemerValue(mConStr1([]))
+            .txInScript(pool.script);
+    }
+
+    if (eventOccurred) {
+        payouts.set(poolDatum.hedger, totalPrincipalSettled);
+    }
+
+    payouts.forEach((amt, to) => {
+        tx = tx.txOut(to, [
+            {
+                unit: asset.unit,
+                quantity: amt.toString(),
+            },
+        ]);
+    });
+
+    const invalidHereafter = calculatePoolValidityLimit(
+        poolDatum.subscription_end
+    );
+
+    await tx
+        .readOnlyTxInReference(regRef.input.txHash, regRef.input.outputIndex)
+        .readOnlyTxInReference(
+            oracleUtxo.input.txHash,
+            oracleUtxo.input.outputIndex
+        )
+        .requiredSignerHash(pkh)
+        .txInCollateral(
+            collateral.input.txHash,
+            collateral.input.outputIndex,
+            collateral.output.amount,
+            collateral.output.address
+        )
+        .invalidHereafter(invalidHereafter)
+        .changeAddress(addr)
+        .selectUtxosFrom(utxos)
+        .complete();
+
+    return { unsignedTx: tx.txHex }; // ✅ changed
+}
