@@ -34,6 +34,27 @@ Parametrix is a decentralized RealFi protocol for **hedging real-world economic 
 
 ---
 
+## ⚠️ Configuration Checklist
+
+Before running the project, ensure the following files are correctly configured:
+
+```text
+contracts/meshjs/blockchainProvider.ts
+contracts/meshjs/<wallet>.json
+charli3-meshjs/.env.test
+parametrix-fe/lib/blockchainProvider.ts
+```
+
+### Verify the following
+
+- Blockfrost / network configuration is correct
+- Wallet JSON contains valid keys and is funded (ADA + DJED)
+- Environment variables in `.env.test` are properly set
+- Frontend and backend providers point to the same network (e.g., preprod)
+
+> Ensure `plutus.json` is built and copied to all required import locations (e.g., frontend `lib/`) before running, otherwise contract interactions will fail.
+---
+
 ## End-to-End Run (Sequential)
 
 ### Technical setup for dapp
