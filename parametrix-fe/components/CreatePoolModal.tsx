@@ -16,7 +16,7 @@ const CONFIG: {
 } = {
     riskEvents: [
         {label: "Rainfall Exceeds Threshold", value: "RAINFALL_EXCEEDED"},
-        {label: "Flight Delay", value: "FLIGHT_DELAY"},
+        //{label: "Flight Delay", value: "FLIGHT_DELAY"},
     ],
     coverage: [250, 500, 1000],
     premiumBps: [

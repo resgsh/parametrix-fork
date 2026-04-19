@@ -30,6 +30,46 @@ Parametrix is a decentralized RealFi protocol for **hedging real-world economic 
 
 ## End-to-End Run (Sequential)
 
+### Technical setup for dapp
+```mermaid
+flowchart LR
+
+A[Start Oracle Updater] --> B[Build Aiken Contracts]
+B --> C[Copy plutus.json to Frontend]
+C --> D[Start Frontend]
+```
+
+### Technical setup for dapp
+```mermaid
+flowchart LR
+
+E[Connect Wallet] --> F[Create Pool RAINFALL_EXCEEDED]
+
+F --> G[Pool Created and Premium Locked]
+
+G --> H1[Subscribe LP1 100 DJED]
+G --> H2[Subscribe LP2 150 DJED]
+
+H1 --> I[Pool Subscribed]
+H2 --> I
+```
+
+### .
+```mermaid
+flowchart LR
+
+  I[Settlement time] --> J[Refresh Oracle from UI]
+
+  J --> L[Settle - Contract checks Oracle value and validity]
+
+  L --> N{Event Occurred}
+
+  N -->|Yes| O[Hedger gets coverage and LPs get premium]
+  N -->|No| P[LPs get principal and premium]
+
+  O --> Q[Settlement Complete]
+  P --> Q
+```
 
 ### 1. Start Oracle Updater (Refresh ODV Feed service)
 
@@ -304,7 +344,38 @@ Risk event occurred: true
 
 ---
 
-## Tagline
-
+## A tagline
 **Hedge real-world uncertainty, on-chain.**
 
+## Future Scope
+
+* **Contract Hardening**
+
+  * Expand test coverage (edge cases, boundary conditions)
+  * Stress-test oracle validity, expiry, and malformed data handling
+
+* **Full UI Integration**
+
+  * Enable **subscribe** and **settle** flows directly from frontend
+  * Remove CLI dependency for end users
+
+* **Custom Oracle Feeds**
+
+  * Support domain-specific feeds (weather APIs, flight data, etc.)
+  * Map oracle values → real-world event semantics more explicitly
+
+* **KYC Layer (RealFi Readiness)**
+
+  * Integrate identity verification (e.g. Veridian)
+  * Enable compliant participation for regulated use cases
+
+* **Partnerships & Deployment**
+
+  * Collaborate with data providers (weather, travel, etc.)
+  * Launch pilot pools with real-world partners
+
+* **UI / UX Improvements**
+
+  * Better pool visualization (status, coverage, timelines)
+  * Clearer transaction feedback and error states
+  * Simplified onboarding for non-technical users
