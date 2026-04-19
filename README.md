@@ -22,7 +22,7 @@ Parametrix is a decentralized protocol for **parametric risk pools**, where real
 ├── contracts
 │   ├── aiken        # on-chain validators
 │   └── meshjs       # tx building / integration
-├── oracle-updater   # FastAPI oracle writer service
+├── oracle-updater   # FastAPI oracle refresh service
 └── parametrix-fe    # Next.js frontend dApp
 ```
 
@@ -47,7 +47,7 @@ poetry run uvicorn app.main:app --reload --port 8000
 Verify the API service is running:
 
 ```bash
-curl -X POST http://localhost:8000/
+curl http://localhost:8000/
 ```
 
 **Expected response:**
