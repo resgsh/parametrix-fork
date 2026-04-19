@@ -15,6 +15,12 @@ Parametrix is a decentralized RealFi protocol for **hedging real-world economic 
 
 ---
 
+## Demo Video
+
+▶️ https://youtu.be/L75BTf7UHl4
+
+---
+
 ## Repository Structure
 
 ```bash
@@ -34,24 +40,24 @@ Parametrix is a decentralized RealFi protocol for **hedging real-world economic 
 ```mermaid
 flowchart LR
 
-A[Start Oracle Updater] --> B[Build Aiken Contracts]
-B --> C[Copy plutus.json to Frontend]
-C --> D[Start Frontend]
+  A[Start Oracle Updater] --> B[Build Aiken Contracts]
+  B --> C[Copy plutus.json to Frontend]
+  C --> D[Start Frontend]
 ```
 
 ### Technical setup for dapp
 ```mermaid
 flowchart LR
 
-E[Connect Wallet] --> F[Create Pool RAINFALL_EXCEEDED]
+  E[Connect Wallet] --> F[Create Pool RAINFALL_EXCEEDED]
 
-F --> G[Pool Created and Premium Locked]
+  F --> G[Pool Created and Premium Locked]
 
-G --> H1[Subscribe LP1 100 DJED]
-G --> H2[Subscribe LP2 150 DJED]
+  G --> H1[Subscribe LP1 100 DJED]
+  G --> H2[Subscribe LP2 150 DJED]
 
-H1 --> I[Pool Subscribed]
-H2 --> I
+  H1 --> I[Pool Subscribed]
+  H2 --> I
 ```
 
 ### .
@@ -137,8 +143,8 @@ Open: `http://localhost:3000`
 * Connect CIP-30 wallet (tested with Eternl)
 * Create a pool:
 
-    * Select event type: **RAINFALL_EXCEEDED** - This has been tested.
-    * Other fields are prefilled for demo
+  * Select event type: **RAINFALL_EXCEEDED** - This has been tested.
+  * Other fields are prefilled for demo
 * Submit transaction → pool initialized on-chain
 
 ---
@@ -146,7 +152,7 @@ Open: `http://localhost:3000`
 ### 4. Subscribe + Settle execution via CLI
 
 > Frontend currently handles **pool creation** and **ODV oracle refresh**
-> 
+>
 > Custom build MeshJS based typescript CLI is used for **subscription and settlement**. UI integration for these endpoints need refinement.
 
 Prerequisites:
@@ -314,8 +320,8 @@ Risk event occurred: true
 * Uses compiled Aiken validators (`plutus.json`)
 * Handles:
 
-    * Subscription (liquidity provision)
-    * Settlement (oracle evaluation + payouts)
+  * Subscription (liquidity provision)
+  * Settlement (oracle evaluation + payouts)
 
 ---
 
